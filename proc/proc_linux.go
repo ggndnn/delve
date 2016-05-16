@@ -349,12 +349,14 @@ func (dbp *Process) loadProcessInformation(wg *sync.WaitGroup) {
 		if(err != nil) {
 			break
 		}
-		rexp, err := regexp.Compile(fmt.Sprintf("%d\\s*\\((.*)\\)", dbp.Pid))
+		expr := fmt.Sprintf("%d\\s*\\((.*)\\)", dbp.Pid)
+		rexp, err := regexp.Compile(expr)
 		if(err != nil) {
 			break
 		}
 		match := rexp.FindSubmatch(stat);
 		if(match == nil) {
+			err = errors.New(fmt.Sprintf("no match found using regexp '%s' in /proc/%d/stat", expr, dbp.Pid))
 			break
 		}
 		comm = match[1]
