@@ -91,13 +91,23 @@ func (s *ServerImpl) Run() error {
 					panic(err)
 				}
 			}
-			go rpcs.ServeCodec(jsonrpc.NewServerCodec(c))
+			go s.ServeCodec(jsonrpc.NewServerCodec(c), rpcs)
 			if !s.s.config.AcceptMulti {
 				break
 			}
 		}
 	}()
 	return nil
+}
+
+func (s *ServerImpl) ServeCodec(codec grpc.ServerCodec, server *grpc.Server) {
+	for {
+		err := server.ServeRequest(codec)
+		if(err != nil) {
+			break;
+		}
+	}
+	codec.Close()
 }
 
 func (s *RPCServer) ProcessPid(arg1 interface{}, pid *int) error {
