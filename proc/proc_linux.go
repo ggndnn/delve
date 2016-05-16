@@ -13,6 +13,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	"regexp"
 
 	"golang.org/x/debug/elf"
 
@@ -338,12 +339,29 @@ func (dbp *Process) loadProcessInformation(wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	comm, err := ioutil.ReadFile(fmt.Sprintf("/proc/%d/comm", dbp.Pid))
-	if err != nil {
-		fmt.Printf("Could not read process comm name: %v\n", err)
-		os.Exit(1)
+
+	for (comm == nil || len(comm) <= 0) {
+		stat, err := ioutil.ReadFile(fmt.Sprintf("/proc/%d/stat", dbp.Pid));
+		if(err != nil) {
+			break;
+		}
+		rexp, err := regexp.Compile(fmt.Sprintf("%d\\s*\\((.*)\\)", dbp.Pid))
+		if(err != nil) {
+			break;
+		}
+		match := rexp.FindSubmatch(stat);
+		if(match == nil) {
+			break;
+		}
+		comm = match[1];
+		break;
 	}
-	// removes newline character
-	comm = comm[:len(comm)-1]
+
+	if(comm == nil || len(comm) <= 0) {
+		fmt.Printf("Could not read process comm name: %v\n", err)
+		os.Exit(1);
+	}
+
 	dbp.os.comm = strings.Replace(string(comm), "%", "%%", -1)
 }
 
